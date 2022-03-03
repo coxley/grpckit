@@ -23,8 +23,9 @@ RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     libtool \
     autoconf \
-    zlib1g-dev    \
-    libssl-dev
+    zlib1g-dev \
+    libssl-dev \
+    make
 
 WORKDIR /tmp
 
