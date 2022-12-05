@@ -1,17 +1,65 @@
-ARG debian=buster
-ARG go=1.16
+ARG debian=bullseye
+ARG go=1.19
 ARG grpc
 ARG grpc_java
 ARG buf_version
 ARG grpc_web
 
-FROM golang:$go-$debian AS build
+
+
+# Pure go binaries
+FROM golang:$go-$debian AS build-go
+ARG grpc
+
+# Go get go-related bins
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# Gogo and Gogo Fast
+RUN go install github.com/gogo/protobuf/protoc-gen-gogo@latest && \
+    go install github.com/gogo/protobuf/protoc-gen-gogofast@latest && \
+    go install github.com/gogo/protobuf/protoc-gen-gogoslick@latest
+
+# Lint
+RUN go install github.com/ckaznocha/protoc-gen-lint@latest
+
+# Docs
+RUN go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest
+
+# Install google openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+RUN go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
+
+# Figure out if this is a naming collision
+# RUN go get -u github.com/micro/protobuf/protoc-gen-go
+
+# Omniproto
+RUN go install github.com/grpckit/omniproto@latest
+
+RUN go install github.com/GoogleCloudPlatform/protoc-gen-bq-schema@latest
+
+# Add Ruby Sorbet types support (rbi)
+RUN go install github.com/coinbase/protoc-gen-rbi@latest
+
+
+
+FROM build-go AS build
+ARG grpc
+ARG grpc_java
+ARG buf_version
+ARG grpc_web
 
 # TIL docker arg variables need to be redefined in each build stage
 ARG grpc
 ARG grpc_java
 ARG grpc_web
 ARG buf_version
+
+# Parallel cmake
+ENV CMAKE_BUILD_PARALLEL_LEVEL=8
+
+# update path for go get dependencies
+ENV PATH "$PATH:/opt/bin"
 
 RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -29,7 +77,7 @@ RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /tmp
 
-RUN git clone -b v$grpc.x --recursive -j8 --depth 1 https://github.com/grpc/grpc
+RUN git clone --recursive https://github.com/grpc/grpc && cd grpc && git checkout tags/v$grpc
 RUN mkdir -p /tmp/grpc/cmake/build
 WORKDIR /tmp/grpc/cmake/build
 RUN cmake ../..  \
@@ -38,21 +86,12 @@ RUN cmake ../..  \
     -DgRPC_BUILD_TESTS=OFF \
     -DgRPC_ZLIB_PROVIDER=package \
     -DgRPC_SSL_PROVIDER=package \
-    -DCMAKE_INSTALL_PREFIX=/opt
-RUN make
-RUN make install
-
-# update path for go get dependencies
-ENV PATH "$PATH:/opt/bin"
-
-# Workaround for the transition to protoc-gen-go-grpc
-# https://grpc.io/docs/languages/go/quickstart/#regenerate-grpc-code
-WORKDIR /tmp
-RUN git clone -b v$grpc.x --recursive https://github.com/grpc/grpc-go.git
-RUN ( cd ./grpc-go/cmd/protoc-gen-go-grpc && go install . )
+    -DCMAKE_INSTALL_PREFIX=/opt && \
+    make && \
+    make install
 
 WORKDIR /tmp
-RUN git clone -b v$grpc_java.x --recursive https://github.com/grpc/grpc-java.git
+RUN git clone --recursive https://github.com/grpc/grpc-java.git && cd grpc-java && git checkout v$grpc_java
 WORKDIR /tmp/grpc-java/compiler
 RUN CXXFLAGS="-I/opt/include" LDFLAGS="-L/opt/lib" ../gradlew -PskipAndroid=true java_pluginExecutable
 
@@ -66,28 +105,6 @@ RUN BIN="/usr/local/bin" && \
     -o "${BIN}/${BINARY_NAME}" && \
     chmod +x "${BIN}/${BINARY_NAME}"
 
-# Go get go-related bins
-RUN go get -u google.golang.org/grpc
-RUN go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc
-RUN go get -u google.golang.org/protobuf/cmd/protoc-gen-go
-
-# Gogo and Gogo Fast
-RUN go get -u github.com/gogo/protobuf/protoc-gen-gogo
-RUN go get -u github.com/gogo/protobuf/protoc-gen-gogofast
-RUN go get -u github.com/gogo/protobuf/protoc-gen-gogoslick
-
-# Lint
-RUN go get -u github.com/ckaznocha/protoc-gen-lint
-
-# Docs
-RUN go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
-
-# Install google openapi 
-# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
-RUN go get -u github.com/google/gnostic/cmd/protoc-gen-openapi
-
-# Figure out if this is a naming collision
-# RUN go get -u github.com/micro/protobuf/protoc-gen-go
 
 # RUN go get -d github.com/envoyproxy/protoc-gen-validate
 RUN git clone --recursive -j8 --depth 1 https://github.com/envoyproxy/protoc-gen-validate.git
@@ -96,13 +113,6 @@ RUN make -C /tmp/protoc-gen-validate build
 
 WORKDIR /tmp
 
-# Omniproto
-RUN go get -u github.com/grpckit/omniproto
-
-RUN go get -u github.com/GoogleCloudPlatform/protoc-gen-bq-schema
-
-# Add Ruby Sorbet types support (rbi)
-RUN go get -u github.com/coinbase/protoc-gen-rbi
 
 # Add scala support
 RUN curl -LO https://github.com/scalapb/ScalaPB/releases/download/v0.9.6/protoc-gen-scala-0.9.6-linux-x86_64.zip \
