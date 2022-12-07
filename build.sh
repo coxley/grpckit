@@ -6,6 +6,7 @@ for build in ${BUILDS[@]}; do
     echo "building ${build} container with tag ${tag}"
 	docker build -t ${tag} \
         -f Dockerfile \
+        --build-arg libprotoc_version=${LIBPROTOC_VERSION} \
         --build-arg grpc=${GRPC_VERSION} \
         --build-arg grpc_java=${GRPC_JAVA_VERSION} \
         --build-arg grpc_web=${GRPC_WEB_VERSION} \

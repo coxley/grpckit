@@ -1,5 +1,6 @@
 ARG debian=bullseye
 ARG go=1.19
+ARG libprotoc_version
 ARG grpc
 ARG grpc_java
 ARG buf_version
@@ -9,7 +10,15 @@ ARG grpc_web
 
 # Pure go binaries
 FROM golang:$go-$debian AS build-go
+ARG libprotoc_version
 ARG grpc
+
+# Pin protoc version
+RUN apt-get update && apt-get install -y -qq unzip wget && \
+    cd /tmp/ && wget https://github.com/protocolbuffers/protobuf/releases/download/v${libprotoc_version}/protoc-${libprotoc_version}-linux-x86_64.zip  && \
+    unzip /tmp/protoc-${libprotoc_version}-linux-x86_64.zip && \
+    mv /tmp/bin/protoc /usr/local/bin/protoc && \
+    chmod +x /usr/local/bin/protoc
 
 # Go get go-related bins
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
@@ -22,6 +31,9 @@ RUN go install github.com/gogo/protobuf/protoc-gen-gogo@latest && \
 
 # Lint
 RUN go install github.com/ckaznocha/protoc-gen-lint@latest
+
+# Validations
+RUN go install github.com/envoyproxy/protoc-gen-validate@latest
 
 # Docs
 RUN go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest
@@ -105,11 +117,6 @@ RUN BIN="/usr/local/bin" && \
     -o "${BIN}/${BINARY_NAME}" && \
     chmod +x "${BIN}/${BINARY_NAME}"
 
-
-# RUN go get -d github.com/envoyproxy/protoc-gen-validate
-RUN git clone --recursive -j8 --depth 1 https://github.com/envoyproxy/protoc-gen-validate.git
-WORKDIR /tmp/protoc-gen-validate
-RUN make -C /tmp/protoc-gen-validate build
 
 WORKDIR /tmp
 
