@@ -1,5 +1,5 @@
 ARG debian=bullseye
-ARG go=1.19
+ARG go=1.20
 ARG libprotoc_version
 ARG grpc
 ARG grpc_java
