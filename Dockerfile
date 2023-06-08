@@ -1,5 +1,5 @@
 ARG debian=bullseye
-ARG go=1.20
+ARG go=1.20.5
 ARG libprotoc_version
 ARG grpc
 ARG grpc_java
@@ -91,15 +91,15 @@ RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
 
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
     apt-get update -y -qq && \
-    apt-get install -y -qq clang-14
+    apt-get install -y -qq clang-13
 
 WORKDIR /tmp
 
 RUN git clone --depth 1 --shallow-submodules -b v$grpc --recursive https://github.com/grpc/grpc && cd grpc
 RUN mkdir -p /tmp/grpc/cmake/build
 WORKDIR /tmp/grpc/cmake/build
-ENV CMAKE_C_COMPILER=clang-14
-ENV CMAKE_CXX_COMPILER=clang++-14
+ENV CMAKE_C_COMPILER=clang-13
+ENV CMAKE_CXX_COMPILER=clang++-13
 RUN cmake ../..  \
     -DCMAKE_BUILD_TYPE=Release \
     -DgRPC_INSTALL=ON \
