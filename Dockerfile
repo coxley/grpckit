@@ -98,6 +98,8 @@ WORKDIR /tmp
 RUN git clone --depth 1 --shallow-submodules -b v$grpc --recursive https://github.com/grpc/grpc && cd grpc
 RUN mkdir -p /tmp/grpc/cmake/build
 WORKDIR /tmp/grpc/cmake/build
+ENV CMAKE_C_COMPILER=clang-14
+ENV CMAKE_CXX_COMPILER=clang++-14
 RUN cmake ../..  \
     -DCMAKE_BUILD_TYPE=Release \
     -DgRPC_INSTALL=ON \
