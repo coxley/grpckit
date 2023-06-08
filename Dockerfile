@@ -78,7 +78,6 @@ RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     pkg-config \
     cmake \
-    clang-14 \
     curl \
     git \
     openjdk-11-jre \
@@ -87,7 +86,12 @@ RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
     autoconf \
     zlib1g-dev \
     libssl-dev \
+    wget \
     make
+
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
+    apt-get update -y -qq && \
+    apt-get install -y -qq clang-14
 
 WORKDIR /tmp
 
