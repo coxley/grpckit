@@ -1,4 +1,4 @@
-ARG debian=bookworm
+ARG debian=bullseye
 ARG go=1.20
 ARG libprotoc_version
 ARG grpc
