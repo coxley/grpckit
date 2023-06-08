@@ -1,4 +1,4 @@
-ARG debian=bullseye
+ARG debian=bookworm
 ARG go=1.20
 ARG libprotoc_version
 ARG grpc
@@ -78,6 +78,7 @@ RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     pkg-config \
     cmake \
+    clang-14 \
     curl \
     git \
     openjdk-11-jre \
