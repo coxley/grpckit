@@ -87,11 +87,13 @@ RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     libssl-dev \
     wget \
-    make
+    make \
+    autoconf libtool pkg-config g++ bazel-bootstrap
 
-RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
-    apt-get update -y -qq && \
-    apt-get install -y -qq clang-13
+RUN git clone https://github.com/protocolbuffers/protobuf.git && \
+    cd protobuf && \
+    git submodule update --init --recursive && \
+    git checkout tags/v$grpc
 
 WORKDIR /tmp
 
