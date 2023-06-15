@@ -6,19 +6,22 @@ ARG grpc_java
 ARG buf_version
 ARG grpc_web
 
-
-
 # Pure go binaries
 FROM golang:$go-$debian AS build-go
 ARG libprotoc_version
 ARG grpc
+ARG BUILDARCH
 
-# Pin protoc version
-RUN apt-get update && apt-get install -y -qq unzip wget && \
-    cd /tmp/ && wget https://github.com/protocolbuffers/protobuf/releases/download/v${libprotoc_version}/protoc-${libprotoc_version}-linux-x86_64.zip  && \
-    unzip /tmp/protoc-${libprotoc_version}-linux-x86_64.zip && \
-    mv /tmp/bin/protoc /usr/local/bin/protoc && \
-    chmod +x /usr/local/bin/protoc
+RUN apt-get update && apt-get install -y -qq unzip wget
+
+# Pin protoc version https://github.com/kserve/rest-proxy/blob/4e55a008eb2199184ab15b9740a29f58172790b6/Dockerfile#L48-L73
+
+RUN export ZIP=x86_64 \
+    && if [ ${BUILDARCH} = "arm64" ]; then export ZIP=aarch_64; fi \
+    && wget -qO protoc.zip "https://github.com/protocolbuffers/protobuf/releases/download/v${libprotoc_version}/protoc-${libprotoc_version}-linux-${ZIP}.zip" \
+    && unzip protoc.zip -x readme.txt -d /usr/local \
+    && chmod +x /usr/local/bin/protoc \
+    && protoc --version
 
 # Go get go-related bins
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
@@ -52,8 +55,6 @@ RUN go install github.com/GoogleCloudPlatform/protoc-gen-bq-schema@latest
 
 # Add Ruby Sorbet types support (rbi)
 RUN go install github.com/coinbase/protoc-gen-rbi@latest
-
-
 
 FROM build-go AS build
 ARG grpc
@@ -89,7 +90,7 @@ RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /tmp
 
-RUN git clone --recursive https://github.com/grpc/grpc && cd grpc && git checkout tags/v$grpc
+RUN git clone --depth 1 --shallow-submodules -b v$grpc --recursive https://github.com/grpc/grpc && cd grpc
 RUN mkdir -p /tmp/grpc/cmake/build
 WORKDIR /tmp/grpc/cmake/build
 RUN cmake ../..  \
@@ -103,7 +104,7 @@ RUN cmake ../..  \
     make install
 
 WORKDIR /tmp
-RUN git clone --recursive https://github.com/grpc/grpc-java.git && cd grpc-java && git checkout v$grpc_java
+RUN git clone --depth 1 --shallow-submodules -b v$grpc_java --recursive https://github.com/grpc/grpc-java.git && cd grpc-java
 WORKDIR /tmp/grpc-java/compiler
 RUN CXXFLAGS="-I/opt/include" LDFLAGS="-L/opt/lib" ../gradlew -PskipAndroid=true java_pluginExecutable
 
@@ -117,9 +118,7 @@ RUN BIN="/usr/local/bin" && \
     -o "${BIN}/${BINARY_NAME}" && \
     chmod +x "${BIN}/${BINARY_NAME}"
 
-
 WORKDIR /tmp
-
 
 # Add scala support
 RUN curl -LO https://github.com/scalapb/ScalaPB/releases/download/v0.9.6/protoc-gen-scala-0.9.6-linux-x86_64.zip \
