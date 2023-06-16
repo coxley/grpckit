@@ -7,6 +7,7 @@ for build in ${BUILDS[@]}; do
 	docker buildx build -t ${tag} \
         -f Dockerfile \
         --platform=linux/$(uname -m) \
+        --cache-from ${tag} \
         --build-arg libprotoc_version=${LIBPROTOC_VERSION} \
         --build-arg grpc=${GRPC_VERSION} \
         --build-arg grpc_java=${GRPC_JAVA_VERSION} \
