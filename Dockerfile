@@ -56,6 +56,9 @@ RUN go install github.com/GoogleCloudPlatform/protoc-gen-bq-schema@latest
 # Add Ruby Sorbet types support (rbi)
 RUN go install github.com/coinbase/protoc-gen-rbi@latest
 
+# vtproto
+RUN go install github.com/planetscale/vtprotobuf/cmd/protoc-gen-go-vtproto@latest
+
 FROM build-go AS build
 ARG grpc
 ARG grpc_java
