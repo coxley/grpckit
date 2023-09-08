@@ -43,6 +43,8 @@ protoc:
     RUN curl --silent --retry 3 --retry-all-errors --location https://github.com/protocolbuffers/protobuf/releases/download/v${LIBPROTOC_VERSION}/protoc-${LIBPROTOC_VERSION}-linux-x86_64.zip --output protoc.zip
   ELSE IF [ "$USERARCH" = "arm64" ]
     RUN curl --silent --retry 3 --retry-all-errors --location https://github.com/protocolbuffers/protobuf/releases/download/v${LIBPROTOC_VERSION}/protoc-${LIBPROTOC_VERSION}-linux-aarch_64.zip --output protoc.zip
+  ELSE IF [ "$USERARCH" = "arm/v8" ]
+    RUN curl --silent --retry 3 --retry-all-errors --location https://github.com/protocolbuffers/protobuf/releases/download/v${LIBPROTOC_VERSION}/protoc-${LIBPROTOC_VERSION}-linux-aarch_64.zip --output protoc.zip
   ELSE
     RUN echo "unsupported architecture"
     RUN exit 1
