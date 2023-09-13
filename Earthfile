@@ -162,6 +162,9 @@ protobuf-go:
   # Add Ruby Sorbet types support (rbi)
   RUN go install github.com/coinbase/protoc-gen-rbi@latest
 
+  # vtproto
+  RUN go install github.com/planetscale/vtprotobuf/cmd/protoc-gen-go-vtproto@latest
+
   SAVE ARTIFACT /go/bin /go/bin
 
 grpckit-build:
