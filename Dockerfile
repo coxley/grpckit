@@ -1,5 +1,5 @@
-ARG debian=bullseye
-ARG go=1.20
+ARG debian=bookworm
+ARG go=1.21
 ARG libprotoc_version
 ARG grpc
 ARG grpc_java
